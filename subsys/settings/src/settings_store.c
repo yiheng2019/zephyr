@@ -42,6 +42,11 @@ void settings_dst_register(struct settings_store *cs)
 
 int settings_load(void)
 {
+	return settings_load_subtree(NULL);
+}
+
+int settings_load_subtree(const char *subtree)
+{
 	struct settings_store *cs;
 
 	/*
@@ -52,7 +57,7 @@ int settings_load(void)
 	 */
 
 	SYS_SLIST_FOR_EACH_CONTAINER(&settings_load_srcs, cs, cs_next) {
-		cs->cs_itf->csi_load(cs);
+		cs->cs_itf->csi_load(cs, subtree);
 	}
 	return settings_commit();
 }

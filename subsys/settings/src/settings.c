@@ -20,8 +20,6 @@ LOG_MODULE_REGISTER(settings, CONFIG_SETTINGS_LOG_LEVEL);
 sys_slist_t settings_handlers;
 
 
-static struct settings_handler *settings_handler_lookup(char *name);
-
 void settings_store_init(void);
 
 void settings_init(void)
@@ -32,27 +30,92 @@ void settings_init(void)
 
 int settings_register(struct settings_handler *handler)
 {
-	if (settings_handler_lookup(handler->name)) {
-		return -EEXIST;
+	struct settings_handler *ch;
+
+	SYS_SLIST_FOR_EACH_CONTAINER(&settings_handlers, ch, node) {
+		/* avoid registering a setting handler that is sub or a super of
+		 * existing handler
+		 */
+		if ((settings_name_cmp(handler->name, ch->name, NULL) == 1) ||
+		    (settings_name_cmp(ch->name, handler->name, NULL) == 1)) {
+			return -EINVAL;
+		}
+		/* avoid registering existing handlers */
+		if (settings_name_cmp(handler->name, ch->name, NULL) == 0) {
+			return -EEXIST;
+		}
+
 	}
 	sys_slist_prepend(&settings_handlers, &handler->node);
 
 	return 0;
 }
 
-/*
- * Find settings_handler based on name.
- */
-static struct settings_handler *settings_handler_lookup(char *name)
+int settings_name_cmp(const char *name, const char *key, const char **next)
 {
-	struct settings_handler *ch;
-
-	SYS_SLIST_FOR_EACH_CONTAINER(&settings_handlers, ch, node) {
-		if (!strcmp(name, ch->name)) {
-			return ch;
-		}
+	if (next) {
+		*next = NULL;
 	}
-	return NULL;
+
+	/* name might come from flash directly, in flash the name would end
+	 * with '=' or '\0' depending how storage is done. Flash reading is
+	 * limited to what can be read
+	 */
+
+	while ((*key != '\0') && (*key == *name) &&
+	       (*name != '\0') && (*name != SETTINGS_NAME_END)) {
+		key++;
+		name++;
+	}
+
+	if (*key != '\0') {
+		return -ENOENT;
+	}
+
+	if (*name == SETTINGS_NAME_SEPARATOR) {
+		if (next) {
+			*next = name + 1;
+		}
+		return 1;
+	}
+
+	if ((*name == SETTINGS_NAME_END) || (*name == '\0')) {
+		return 0;
+	}
+
+	return -ENOENT;
+}
+
+int settings_name_split(const char *name, char *argv, const char **next)
+{
+	if (next) {
+		*next = NULL;
+	}
+
+	/* name might come from flash directly, in flash the name would end
+	 * with '=' or '\0' depending how storage is done. Flash reading is
+	 * limited to what can be read
+	 */
+	while ((*name != '\0') && (*name != SETTINGS_NAME_END) &&
+	       (*name != SETTINGS_NAME_SEPARATOR)) {
+		*argv++ = *name++;
+	}
+
+
+	if (*name == SETTINGS_NAME_SEPARATOR) {
+		*argv = '\0';
+		if (next) {
+			*next = name + 1;
+		}
+		return 1;
+	}
+
+	if ((*name == '\0') || (*name == SETTINGS_NAME_END)) {
+		*argv = '\0';
+		return 0;
+	}
+
+	return -ENOENT;
 }
 
 /*
@@ -71,7 +134,7 @@ int settings_parse_name(char *name, int *name_argc, char *name_argv[])
 				break;
 			}
 
-			if (*name == *SETTINGS_NAME_SEPARATOR) {
+			if (*name == SETTINGS_NAME_SEPARATOR) {
 				*name = '\0';
 				name++;
 				break;
@@ -85,17 +148,17 @@ int settings_parse_name(char *name, int *name_argc, char *name_argv[])
 	return 0;
 }
 
-struct settings_handler *settings_parse_and_lookup(char *name,
-						   int *name_argc,
-						   char *name_argv[])
+struct settings_handler *settings_parse_and_lookup(const char *name,
+						   const char **next)
 {
-	int rc;
+	struct settings_handler *ch;
 
-	rc = settings_parse_name(name, name_argc, name_argv);
-	if (rc) {
-		return NULL;
+	SYS_SLIST_FOR_EACH_CONTAINER(&settings_handlers, ch, node) {
+		if (settings_name_cmp(name, ch->name, next) >= 0) {
+			return ch;
+		}
 	}
-	return settings_handler_lookup(name_argv[0]);
+	return NULL;
 }
 
 int settings_commit(void)
