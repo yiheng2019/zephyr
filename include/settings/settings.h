@@ -260,9 +260,8 @@ void settings_dst_register(struct settings_store *cs);
 /**
  * Parses a key to an array of elements and locate corresponding module handler.
  *
- * @param name[in] Key in string format
- * @param next[out] If match is found contains part of name following the
- *                  matched handler
+ * @param[in] name in string format
+ * @param[out] next remaining of name after matched handler
  *
  * @return settings_handler node on success, NULL on failure.
  */
@@ -281,9 +280,8 @@ struct settings_handler *settings_parse_and_lookup(const char *name,
  * @param[in] key comparison string
  * @param[out] next pointer to remaining of name (excluding separator)
  *
- * @return 0: full match: name = key
- *         1: partial match: name starts with key but there is more in name
- *         -ENOENT: no match, name does not start with key
+ * @return 0: no match
+ *         1: match, next can be used to check if match is full
  */
 int settings_name_cmp(const char *name, const char *key, const char **next);
 
@@ -296,8 +294,6 @@ int settings_name_cmp(const char *name, const char *key, const char **next);
  *
  * @return 0: there is no separator in name, argv contains name
  *         1: there is a separator in name
- *         -ENOENT: error (this should only happen if empty string is used for
- *                  name)
  */
 int settings_name_split(const char *name, char *argv, const char **next);
 

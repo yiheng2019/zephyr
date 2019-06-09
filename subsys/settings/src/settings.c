@@ -37,27 +37,29 @@ int settings_register(struct settings_handler *handler)
 	k_mutex_lock(&settings_lock, K_FOREVER);
 
 	SYS_SLIST_FOR_EACH_CONTAINER(&settings_handlers, ch, node) {
-		/* avoid registering a setting handler that is sub or a super of
-		 * existing handler
+		/* generate the list in reverse alphabetical order, this will
+		 * guarantee the correct order of processing when subtrees
+		 * are registered. An example list should look like:
+		 *   bt/mesh/ttt/aaa
+		 *   bt/mesh/ttt
+		 *   bt/mesh
+		 *   bt
+		 * each of these can be registered independently.
 		 */
-		if ((settings_name_cmp(handler->name, ch->name, NULL) == 1) ||
-		    (settings_name_cmp(ch->name, handler->name, NULL) == 1)) {
-			rc = -EINVAL;
-			goto end;
+		if (strcmp(handler->name, ch->name) < 0) {
+			break;
 		}
-		/* avoid registering existing handlers */
-		if (settings_name_cmp(handler->name, ch->name, NULL) == 0) {
+		if (strcmp(handler->name, ch->name) == 0) {
 			rc = -EEXIST;
 			goto end;
 		}
-
 	}
-	sys_slist_prepend(&settings_handlers, &handler->node);
+
+	sys_slist_insert(&settings_handlers, &ch->node, &handler->node);
 	rc = 0;
 end:
 	k_mutex_unlock(&settings_lock);
 	return rc;
-
 }
 
 int settings_name_cmp(const char *name, const char *key, const char **next)
@@ -78,7 +80,7 @@ int settings_name_cmp(const char *name, const char *key, const char **next)
 	}
 
 	if (*key != '\0') {
-		return -ENOENT;
+		return 0;
 	}
 
 	if (*name == SETTINGS_NAME_SEPARATOR) {
@@ -89,10 +91,10 @@ int settings_name_cmp(const char *name, const char *key, const char **next)
 	}
 
 	if ((*name == SETTINGS_NAME_END) || (*name == '\0')) {
-		return 0;
+		return 1;
 	}
 
-	return -ENOENT;
+	return 0;
 }
 
 int settings_name_split(const char *name, char *argv, const char **next)
@@ -121,10 +123,10 @@ int settings_name_split(const char *name, char *argv, const char **next)
 
 	if ((*name == '\0') || (*name == SETTINGS_NAME_END)) {
 		*argv = '\0';
-		return 0;
+		return 1;
 	}
 
-	return -ENOENT;
+	return 0;
 }
 
 /*
@@ -163,7 +165,7 @@ struct settings_handler *settings_parse_and_lookup(const char *name,
 	struct settings_handler *ch;
 
 	SYS_SLIST_FOR_EACH_CONTAINER(&settings_handlers, ch, node) {
-		if (settings_name_cmp(name, ch->name, next) >= 0) {
+		if (settings_name_cmp(name, ch->name, next)) {
 			return ch;
 		}
 	}
