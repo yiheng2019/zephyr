@@ -21,6 +21,7 @@ LOG_MODULE_DECLARE(settings, CONFIG_SETTINGS_LOG_LEVEL);
 
 sys_slist_t settings_load_srcs;
 struct settings_store *settings_save_dst;
+extern struct k_mutex settings_lock;
 
 void settings_src_register(struct settings_store *cs)
 {
@@ -55,10 +56,11 @@ int settings_load_subtree(const char *subtree)
 	 *    apply config
 	 *    commit all
 	 */
-
+	k_mutex_lock(&settings_lock, K_FOREVER);
 	SYS_SLIST_FOR_EACH_CONTAINER(&settings_load_srcs, cs, cs_next) {
 		cs->cs_itf->csi_load(cs, subtree);
 	}
+	k_mutex_unlock(&settings_lock);
 	return settings_commit();
 }
 

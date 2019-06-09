@@ -18,6 +18,7 @@
 LOG_MODULE_REGISTER(settings, CONFIG_SETTINGS_LOG_LEVEL);
 
 sys_slist_t settings_handlers;
+struct k_mutex settings_lock;
 
 
 void settings_store_init(void);
@@ -30,7 +31,10 @@ void settings_init(void)
 
 int settings_register(struct settings_handler *handler)
 {
+	int rc;
 	struct settings_handler *ch;
+
+	k_mutex_lock(&settings_lock, K_FOREVER);
 
 	SYS_SLIST_FOR_EACH_CONTAINER(&settings_handlers, ch, node) {
 		/* avoid registering a setting handler that is sub or a super of
@@ -38,17 +42,22 @@ int settings_register(struct settings_handler *handler)
 		 */
 		if ((settings_name_cmp(handler->name, ch->name, NULL) == 1) ||
 		    (settings_name_cmp(ch->name, handler->name, NULL) == 1)) {
-			return -EINVAL;
+			rc = -EINVAL;
+			goto end;
 		}
 		/* avoid registering existing handlers */
 		if (settings_name_cmp(handler->name, ch->name, NULL) == 0) {
-			return -EEXIST;
+			rc = -EEXIST;
+			goto end;
 		}
 
 	}
 	sys_slist_prepend(&settings_handlers, &handler->node);
+	rc = 0;
+end:
+	k_mutex_unlock(&settings_lock);
+	return rc;
 
-	return 0;
 }
 
 int settings_name_cmp(const char *name, const char *key, const char **next)
