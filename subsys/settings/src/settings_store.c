@@ -69,6 +69,7 @@ int settings_load_subtree(const char *subtree)
  */
 int settings_save_one(const char *name, const void *value, size_t val_len)
 {
+	int rc;
 	struct settings_store *cs;
 
 	cs = settings_save_dst;
@@ -76,7 +77,13 @@ int settings_save_one(const char *name, const void *value, size_t val_len)
 		return -ENOENT;
 	}
 
-	return cs->cs_itf->csi_save(cs, name, (char *)value, val_len);
+	k_mutex_lock(&settings_lock, K_FOREVER);
+
+	rc = cs->cs_itf->csi_save(cs, name, (char *)value, val_len);
+
+	k_mutex_unlock(&settings_lock);
+
+	return rc;
 }
 
 int settings_delete(const char *name)

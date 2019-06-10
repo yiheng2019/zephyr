@@ -103,6 +103,7 @@ int ps_settings_init(void)
 void main(void)
 {
 	reset_counter = 0U;
+	int err;
 
 	printk("Started\n");
 	ps_settings_init();
@@ -128,5 +129,10 @@ void main(void)
 	printk("Subtree load test part 3 - Only ps/ra0\n");
 	settings_load_subtree("ps/ra0");
 	printk("Finished");
+
+	err = settings_deregister(&pt_test_settings);
+	printk("Load test - Everything with pt/test deregistered\n");
+	settings_load();
+
 
 }

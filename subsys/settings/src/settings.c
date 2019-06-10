@@ -62,6 +62,17 @@ end:
 	return rc;
 }
 
+int settings_deregister(struct settings_handler *handler)
+{
+	bool found;
+
+	k_mutex_lock(&settings_lock, K_FOREVER);
+	found = sys_slist_find_and_remove(&settings_handlers, &handler->node);
+	k_mutex_unlock(&settings_lock);
+
+	return found ? 0 : -EINVAL;
+}
+
 int settings_name_cmp(const char *name, const char *key, const char **next)
 {
 	if (next) {

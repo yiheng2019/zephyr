@@ -114,6 +114,15 @@ int settings_subsys_init(void);
 int settings_register(struct settings_handler *cf);
 
 /**
+ * Deregister a handler for settings items.
+ *
+ * @param cf Structure containing registration info.
+ *
+ * @return 0 on success, non-zero on failure.
+ */
+int settings_deregister(struct settings_handler *cf);
+
+/**
  * Load serialized items from registered persistence sources. Handlers for
  * serialized item subtrees registered earlier will be called for encountered
  * values.
