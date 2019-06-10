@@ -73,7 +73,7 @@ int settings_deregister(struct settings_handler *handler)
 	return found ? 0 : -EINVAL;
 }
 
-int settings_name_cmp(const char *name, const char *key, const char **next)
+int settings_name_steq(const char *name, const char *key, const char **next)
 {
 	if (next) {
 		*next = NULL;
@@ -140,43 +140,13 @@ int settings_name_split(const char *name, char *argv, const char **next)
 	return 0;
 }
 
-/*
- * Separate string into argv array.
- */
-int settings_parse_name(char *name, int *name_argc, char *name_argv[])
-{
-	int i = 0;
-
-	while (name) {
-		name_argv[i++] = name;
-
-		while (1) {
-			if (*name == '\0') {
-				name = NULL;
-				break;
-			}
-
-			if (*name == SETTINGS_NAME_SEPARATOR) {
-				*name = '\0';
-				name++;
-				break;
-			}
-			name++;
-		}
-	}
-
-	*name_argc = i;
-
-	return 0;
-}
-
 struct settings_handler *settings_parse_and_lookup(const char *name,
 						   const char **next)
 {
 	struct settings_handler *ch;
 
 	SYS_SLIST_FOR_EACH_CONTAINER(&settings_handlers, ch, node) {
-		if (settings_name_cmp(name, ch->name, next)) {
+		if (settings_name_steq(name, ch->name, next)) {
 			return ch;
 		}
 	}
@@ -210,7 +180,7 @@ int settings_commit_subtree(const char *subtree)
 
 	rc = 0;
 	SYS_SLIST_FOR_EACH_CONTAINER(&settings_handlers, ch, node) {
-		if (subtree && !settings_name_cmp(subtree, ch->name, NULL)) {
+		if (subtree && !settings_name_steq(subtree, ch->name, NULL)) {
 			continue;
 		}
 		if (ch->h_commit) {

@@ -49,6 +49,7 @@ int settings_load(void)
 int settings_load_subtree(const char *subtree)
 {
 	struct settings_store *cs;
+	int rc;
 
 	/*
 	 * for every config store
@@ -60,8 +61,9 @@ int settings_load_subtree(const char *subtree)
 	SYS_SLIST_FOR_EACH_CONTAINER(&settings_load_srcs, cs, cs_next) {
 		cs->cs_itf->csi_load(cs, subtree);
 	}
+	rc = settings_commit_subtree(subtree);
 	k_mutex_unlock(&settings_lock);
-	return settings_commit_subtree(subtree);
+	return rc;
 }
 
 /*

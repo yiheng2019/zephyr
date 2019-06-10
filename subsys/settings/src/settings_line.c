@@ -539,7 +539,7 @@ void settings_line_load_cb(const char *name, void *val_read_cb_ctx, off_t off,
 	int rc;
 	size_t len;
 
-	if (cb_arg && !settings_name_cmp(name, cb_arg, NULL)) {
+	if (cb_arg && !settings_name_steq(name, cb_arg, NULL)) {
 		return;
 	}
 

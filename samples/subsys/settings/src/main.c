@@ -21,34 +21,40 @@ u8_t reset_counter;
 static int ps_set(const char *key, size_t len, settings_read_cb read,
 		  void *cb_arg)
 {
-	const char *dyn_name;
+	const char *next;
 	char argv[32];
 
 	if (key == NULL) {
 		return 0;
 	}
 
-	/* use settings_name_cmp to compare with a fixed key */
-	if (settings_name_cmp(key, "ra0", NULL)) {
-		printk("Loading ra0\n");
+	/* use settings_name_steq to compare with a fixed key */
+	if (settings_name_steq(key, "ra0", &next)) {
+		if ((!next) && (len == sizeof(reset_counter))) {
+			printk("Loading ra0\n");
+		}
 	}
 
-	/* use settings_name_cmp to compare with a fixed key */
-	if (settings_name_cmp(key, "ra1", NULL)) {
-		printk("Loading ra1\n");
+	/* use settings_name_steq to compare with a fixed key */
+	if (settings_name_steq(key, "ra1", &next)) {
+		if ((!next) && (len == sizeof(reset_counter))) {
+			printk("Loading ra1\n");
+		}
 	}
 
-	/* use settings_name_cmp to compare with a fixed key */
-	if (settings_name_cmp(key, "ra2", NULL)) {
-		printk("Loading ra2\n");
+	/* use settings_name_steq to compare with a fixed key */
+	if (settings_name_steq(key, "ra2", &next)) {
+		if ((!next) && (len == sizeof(reset_counter))) {
+			printk("Loading ra2\n");
+		}
 	}
 
-	/* use settings_name_cmp to compare with a fixed key */
-	if (settings_name_cmp(key, "rb", &dyn_name)) {
+	/* use settings_name_steq to compare with a fixed key */
+	if (settings_name_steq(key, "rb", &next)) {
 		printk("Loading rb\n");
-		while (dyn_name != NULL) {
+		while (next) {
 			/* use settings_name_split to read generated names */
-			settings_name_split(dyn_name, argv, &dyn_name);
+			settings_name_split(next, argv, &next);
 			printk("  Found: [%s]\n", argv);
 		}
 	}

@@ -182,6 +182,16 @@ int settings_delete(const char *name);
 int settings_commit(void);
 
 /**
+ * Call commit for settings handler that belong to subtree.
+ * This should apply all settings which has been set, but not applied yet.
+ *
+ * @param subtree name of the subtree to be loaded
+ *
+ * @return 0 on success, non-zero on failure.
+ */
+int settings_commit_subtree(const char *subtree);
+
+/**
  * @} settings
  */
 
@@ -292,7 +302,7 @@ struct settings_handler *settings_parse_and_lookup(const char *name,
  * @return 0: no match
  *         1: match, next can be used to check if match is full
  */
-int settings_name_cmp(const char *name, const char *key, const char **next);
+int settings_name_steq(const char *name, const char *key, const char **next);
 
 /**
  * Splits up name in part before and after first separator ('/')
@@ -305,21 +315,6 @@ int settings_name_cmp(const char *name, const char *key, const char **next);
  *         1: there is a separator in name
  */
 int settings_name_split(const char *name, char *argv, const char **next);
-
-/**
- * Splits up name in count of items separated by separator ('/') and a list
- * of the separated items
- *
- * @param[in] name in string format
- * @param[out] name_argc items count
- * @param[out] name_argv separated items
- *
- * @return 0: there is no separator in name, argv contains name
- *         1: there is a separator in name
- *         -ENOENT: error (this should only happen if empty string is used for
- *                  name)
- */
-int settings_parse_name(char *name, int *name_argc, char *name_argv[]);
 
 /*
  * API for runtime settings
