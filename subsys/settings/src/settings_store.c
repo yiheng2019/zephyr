@@ -61,7 +61,7 @@ int settings_load_subtree(const char *subtree)
 		cs->cs_itf->csi_load(cs, subtree);
 	}
 	k_mutex_unlock(&settings_lock);
-	return settings_commit();
+	return settings_commit_subtree(subtree);
 }
 
 /*

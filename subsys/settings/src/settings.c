@@ -200,3 +200,25 @@ int settings_commit(void)
 	}
 	return rc;
 }
+
+int settings_commit_subtree(const char *subtree)
+{
+	struct settings_handler *ch;
+
+	int rc;
+	int rc2;
+
+	rc = 0;
+	SYS_SLIST_FOR_EACH_CONTAINER(&settings_handlers, ch, node) {
+		if (subtree && !settings_name_cmp(subtree, ch->name, NULL)) {
+			continue;
+		}
+		if (ch->h_commit) {
+			rc2 = ch->h_commit();
+			if (!rc) {
+				rc = rc2;
+			}
+		}
+	}
+	return rc;
+}
